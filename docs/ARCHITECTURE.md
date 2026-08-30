@@ -375,5 +375,47 @@ Centralized gig + milestone state machine (Phase 7 transitions only — no payme
 ## Explicitly Deferred (Phase 7)
 
 - Mobile full project workspace (submit deliverable, revisions).
-- Milestone-based payment release (Phase 8 — paused).
-- `PAYMENT_RELEASED` / `REVIEWED` gig transitions (Phases 8–9).
+- Milestone-based payment release (full Phase 8 — deferred).
+- Platform monetization model TBD.
+
+---
+
+# Phase 8 — Payments (Seam Only)
+
+**Full escrow/ledger integration remains deferred** until the monetization model is finalized. For now:
+
+- **`GET /api/payments/options`** — returns PayChangu portal URL, supported methods, and disclaimer.
+- **`PAYCHANGU_PORTAL_URL`** env var (default `https://dashboard.paychangu.com`) — merchants create/share payment links in PayChangu.
+- **Web UI:** `PaymentOptionsPanel` on project workspace — PayChangu link, plus cash and direct bank transfer as off-platform options.
+- Magobo does **not** process payments, hold funds, or take fees yet. Work tracking, messaging, and reviews stay on-platform.
+
+When monetization is decided, slot in provider-agnostic `Payment`/`Escrow` services without changing the project/review flows.
+
+---
+
+# Phase 9 — Trust System (Reviews & Ratings)
+
+## Database Models
+
+- **`GigReview`** — one review per participant per completed gig (`@@unique([gigId, reviewerUserId])`). Rating 1–5 + optional comment.
+
+## Review Service (`review.service.ts`)
+
+- Reviews allowed when gig is `COMPLETED` or `REVIEWED`.
+- Owner reviews provider; provider reviews owner.
+- **`recalculateTrustStats`** updates `UserProfile` / `BusinessProfile`: `averageRating`, `reviewCount`, `completedGigsCount`.
+- When both parties have reviewed, gig → `REVIEWED`.
+- Completed gig counts updated when owner accepts deliverable.
+
+## API Routes
+
+`POST/GET /api/gigs/[id]/reviews`, `GET ...?pending=true`, `GET /api/users/[userId]/reviews`, `GET /api/payments/options`.
+
+## Web UI
+
+- Review form on project page after completion.
+- Public profile at `/users/[userId]` with trust stats and reviews.
+
+## Testing
+
+Unit tests for review schema and payment seam constants. Typecheck and lint pass across all workspaces.

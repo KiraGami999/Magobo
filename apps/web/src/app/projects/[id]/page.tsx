@@ -9,6 +9,7 @@ import {
   requestRevisionSchema,
   submitDeliverableSchema,
   type PublicProject,
+  type PublicReview,
 } from '@magobo/shared';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +18,8 @@ import { FormField } from '@/components/magobo/form-field';
 import { StatusBadge } from '@/components/magobo/status-badge';
 import { LoadingState } from '@/components/magobo/loading-state';
 import { ErrorState } from '@/components/magobo/error-state';
+import { PaymentOptionsPanel } from '@/components/magobo/payment-options-panel';
+import { ReviewForm } from '@/components/magobo/review-form';
 import { formatMinorCurrency } from '@/lib/format-money';
 import { apiGet, apiPost } from '@/lib/api-client';
 import { useCurrentUser } from '@/lib/use-current-user';
@@ -32,19 +35,39 @@ export default function ProjectWorkspacePage() {
   const [milestoneTitle, setMilestoneTitle] = useState('');
   const [deliverableNotes, setDeliverableNotes] = useState('');
   const [revisionMessage, setRevisionMessage] = useState('');
+  const [pendingReview, setPendingReview] = useState<{
+    canReview: boolean;
+    hasReviewed: boolean;
+    reviewee: { userId: string; fullName: string } | null;
+  } | null>(null);
+  const [reviews, setReviews] = useState<PublicReview[]>([]);
 
   const load = useCallback(async () => {
     if (!params.id) return;
     setLoading(true);
-    const response = await apiGet<{ project: PublicProject }>(`/api/gigs/${params.id}/project`);
-    if (!response.success) {
-      setError(response.error.message);
+    const projectRes = await apiGet<{ project: PublicProject }>(`/api/gigs/${params.id}/project`);
+
+    if (!projectRes.success) {
+      setError(projectRes.error.message);
       setLoading(false);
       return;
     }
-    setProject(response.data.project);
+
+    setProject(projectRes.data.project);
+
+    if (user) {
+      const [pendingRes, reviewsRes] = await Promise.all([
+        apiGet<{ pending: { canReview: boolean; hasReviewed: boolean; reviewee: { userId: string; fullName: string } | null } }>(
+          `/api/gigs/${params.id}/reviews?pending=true`,
+        ),
+        apiGet<{ reviews: PublicReview[] }>(`/api/gigs/${params.id}/reviews`),
+      ]);
+      if (pendingRes.success) setPendingReview(pendingRes.data.pending);
+      if (reviewsRes.success) setReviews(reviewsRes.data.reviews);
+    }
+
     setLoading(false);
-  }, [params.id]);
+  }, [params.id, user]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -123,6 +146,10 @@ export default function ProjectWorkspacePage() {
           Start project
         </Button>
       )}
+
+      {['AWARDED', 'IN_PROGRESS', 'SUBMITTED', 'REVISION_REQUESTED', 'RESUBMITTED', 'COMPLETED', 'REVIEWED'].includes(
+        project.gigStatus,
+      ) && <PaymentOptionsPanel />}
 
       <Card>
         <CardHeader>
@@ -306,6 +333,37 @@ export default function ProjectWorkspacePage() {
         <p className="text-muted-foreground text-sm">
           Completed {new Date(project.completedAt).toLocaleString()}.
         </p>
+      )}
+
+      {pendingReview?.canReview && pendingReview.reviewee && (
+        <ReviewForm
+          gigId={project.gigId}
+          revieweeName={pendingReview.reviewee.fullName}
+          onSubmitted={load}
+        />
+      )}
+
+      {pendingReview?.hasReviewed && (
+        <p className="text-muted-foreground text-sm">You have already reviewed this project.</p>
+      )}
+
+      {reviews.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Reviews</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {reviews.map((review) => (
+              <div key={review.id} className="rounded-lg border p-3">
+                <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-sm font-medium">{review.reviewerName}</span>
+                  <span className="text-sm">{review.rating}/5</span>
+                </div>
+                {review.comment && <p className="text-sm">{review.comment}</p>}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

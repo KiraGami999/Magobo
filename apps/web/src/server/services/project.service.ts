@@ -17,6 +17,7 @@ import { ConflictError, NotFoundError, UnauthorizedError } from '@/server/errors
 import { requireOwnership } from '@/server/auth/guards';
 import { notificationProvider } from '@/server/providers/notification';
 import { storageProvider } from '@/server/providers/storage';
+import { incrementCompletedGigsForParticipants } from '@/server/services/review.service';
 import { toPublicProject } from '@/server/serializers/project';
 
 const projectGigInclude = {
@@ -45,6 +46,7 @@ const PROJECT_STATUSES: GigStatus[] = [
   'REVISION_REQUESTED',
   'RESUBMITTED',
   'COMPLETED',
+  'REVIEWED',
 ];
 
 function assertProjectGigTransition(current: GigStatus, next: GigStatus, action: string): void {
@@ -423,6 +425,8 @@ export async function acceptDeliverable(user: User, gigId: string) {
       data: { status: 'COMPLETED', completedAt: new Date() },
     });
   });
+
+  await incrementCompletedGigsForParticipants(gig.ownerUserId, getProviderUserId(gig));
 
   await notificationProvider.notify({
     event: 'PROJECT_COMPLETED',

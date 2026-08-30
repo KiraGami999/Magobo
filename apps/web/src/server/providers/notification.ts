@@ -13,7 +13,8 @@ export type NotificationEvent =
   | 'MILESTONE_APPROVED'
   | 'DELIVERABLE_SUBMITTED'
   | 'REVISION_REQUESTED'
-  | 'PROJECT_COMPLETED';
+  | 'PROJECT_COMPLETED'
+  | 'REVIEW_RECEIVED';
 
 export interface NotificationPayload {
   event: NotificationEvent;

@@ -75,4 +75,5 @@ export const PROJECT_GIG_STATUSES = [
   'REVISION_REQUESTED',
   'RESUBMITTED',
   'COMPLETED',
+  'REVIEWED',
 ] as const;

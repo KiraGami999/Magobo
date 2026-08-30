@@ -10,6 +10,8 @@
 // Phase 5 (Proposals): Proposal, ProposalNegotiationEntry.
 // Phase 6 (Messaging): Conversation, Message, MessageAttachment.
 // Phase 7 (Project workflow): GigMilestone, GigDeliverable, GigRevisionRequest.
+// Phase 8 (Payments seam): no escrow — PayChangu portal link + off-platform options only.
+// Phase 9 (Trust): GigReview.
 // A single User can hold multiple roles (INDIVIDUAL / BUSINESS /
 // SERVICE_PROVIDER / ADMIN) — Magobo never splits client and provider
 // identities into separate systems.
@@ -161,6 +163,8 @@ model User {
   milestoneSubmissions GigMilestone[] @relation("MilestoneSubmitter")
   deliverables         GigDeliverable[]
   revisionRequests     GigRevisionRequest[]
+  reviewsWritten       GigReview[] @relation("ReviewsWritten")
+  reviewsReceived      GigReview[] @relation("ReviewsReceived")
 
   @@index([status])
   @@index([deletedAt])
@@ -394,6 +398,7 @@ model Gig {
   milestones       GigMilestone[]
   deliverables     GigDeliverable[]
   revisionRequests GigRevisionRequest[]
+  reviews          GigReview[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -630,4 +635,29 @@ model GigRevisionRequest {
 
   @@index([gigId])
   @@index([deliverableId])
+}
+
+/// Post-completion review — one per participant per gig (owner ↔ provider).
+model GigReview {
+  id String @id @default(uuid())
+
+  gigId String
+  gig   Gig    @relation(fields: [gigId], references: [id], onDelete: Cascade)
+
+  reviewerUserId String
+  reviewer       User   @relation("ReviewsWritten", fields: [reviewerUserId], references: [id], onDelete: Cascade)
+
+  revieweeUserId String
+  reviewee       User   @relation("ReviewsReceived", fields: [revieweeUserId], references: [id], onDelete: Cascade)
+
+  /// 1–5 stars — validated server-side.
+  rating  Int
+  comment String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([gigId, reviewerUserId])
+  @@index([revieweeUserId])
+  @@index([gigId])
 }
