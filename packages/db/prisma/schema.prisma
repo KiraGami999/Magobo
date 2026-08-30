@@ -12,6 +12,8 @@
 // Phase 7 (Project workflow): GigMilestone, GigDeliverable, GigRevisionRequest.
 // Phase 8 (Payments seam): no escrow — PayChangu portal link + off-platform options only.
 // Phase 9 (Trust): GigReview.
+// Phase 10 (Admin): AuditLog, Report.
+// Phase 11 (Notifications): Notification.
 // A single User can hold multiple roles (INDIVIDUAL / BUSINESS /
 // SERVICE_PROVIDER / ADMIN) — Magobo never splits client and provider
 // identities into separate systems.
@@ -123,6 +125,54 @@ enum DeliverableStatus {
   SUPERSEDED
 }
 
+enum AuditTargetType {
+  USER
+  GIG
+  KYC_CASE
+  REPORT
+  MESSAGE
+}
+
+enum ReportTargetType {
+  USER
+  GIG
+  MESSAGE
+}
+
+enum ReportStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  FRAUD
+  OFF_PLATFORM
+  INAPPROPRIATE
+  OTHER
+}
+
+/// In-app notification events — must stay in sync with `@magobo/shared`.
+enum NotificationEvent {
+  PROPOSAL_SUBMITTED
+  PROPOSAL_SHORTLISTED
+  PROPOSAL_REJECTED
+  PROPOSAL_ACCEPTED
+  PROPOSAL_WITHDRAWN
+  PROPOSAL_COUNTER_OFFER
+  MESSAGE_RECEIVED
+  PROJECT_STARTED
+  MILESTONE_SUBMITTED
+  MILESTONE_APPROVED
+  DELIVERABLE_SUBMITTED
+  REVISION_REQUESTED
+  PROJECT_COMPLETED
+  REVIEW_RECEIVED
+}
+
 model User {
   id String @id @default(uuid())
 
@@ -165,6 +215,10 @@ model User {
   revisionRequests     GigRevisionRequest[]
   reviewsWritten       GigReview[] @relation("ReviewsWritten")
   reviewsReceived      GigReview[] @relation("ReviewsReceived")
+  auditLogs            AuditLog[]  @relation("AuditActor")
+  reportsFiled         Report[]    @relation("ReportReporter")
+  reportsResolved      Report[]    @relation("ReportResolver")
+  notifications        Notification[]
 
   @@index([status])
   @@index([deletedAt])
@@ -660,4 +714,74 @@ model GigReview {
   @@unique([gigId, reviewerUserId])
   @@index([revieweeUserId])
   @@index([gigId])
+}
+
+/// Immutable record of admin and platform moderation actions.
+model AuditLog {
+  id String @id @default(uuid())
+
+  actorUserId String?
+  actor       User?   @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  action     String
+  targetType AuditTargetType
+  targetId   String
+
+  /// JSON metadata — never store secrets or raw document bytes.
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([actorUserId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+}
+
+/// User-submitted report for admin review.
+model Report {
+  id String @id @default(uuid())
+
+  reporterUserId String
+  reporter       User   @relation("ReportReporter", fields: [reporterUserId], references: [id], onDelete: Cascade)
+
+  targetType ReportTargetType
+  targetId   String
+  reason     ReportReason
+  description String
+
+  status ReportStatus @default(OPEN)
+
+  resolvedByUserId String?
+  resolvedBy       User?   @relation("ReportResolver", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+  resolutionNote   String?
+  resolvedAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reporterUserId])
+  @@index([targetType, targetId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+/// Persisted in-app notification for a user.
+model Notification {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  event   NotificationEvent
+  title   String
+  body    String
+  metadata Json?
+
+  readAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, readAt])
+  @@index([createdAt])
 }

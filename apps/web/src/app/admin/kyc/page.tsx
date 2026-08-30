@@ -2,18 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { AdminKycCaseSummary } from "@magobo/shared";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingState } from "@/components/magobo/loading-state";
 import { ErrorState } from "@/components/magobo/error-state";
 import { apiGet } from "@/lib/api-client";
-import { useCurrentUser } from "@/lib/use-current-user";
 
 export default function AdminKycPage() {
-  const router = useRouter();
-  const { user, loading: authLoading } = useCurrentUser();
   const [cases, setCases] = useState<AdminKycCaseSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,27 +28,17 @@ export default function AdminKycPage() {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace("/login");
-      return;
-    }
-    if (user && !user.roles.includes("ADMIN")) {
-      router.replace("/");
-      return;
-    }
-    if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      void load();
-    }
-  }, [authLoading, user, router, load]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
+  }, [load]);
 
-  if (authLoading || loading) return <LoadingState />;
+  if (loading) return <LoadingState />;
   if (error) return <ErrorState description={error} onRetry={load} />;
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6">
+    <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">KYC review queue</h1>
+        <h2 className="text-lg font-semibold">KYC review queue</h2>
         <p className="text-muted-foreground text-sm">Review and approve identity verification submissions.</p>
       </div>
 

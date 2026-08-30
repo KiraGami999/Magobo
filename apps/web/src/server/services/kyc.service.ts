@@ -14,6 +14,7 @@ import {
   toAdminKycCaseSummary,
   toOwnKycStatus,
 } from '@/server/serializers/kyc';
+import { writeAuditLog } from '@/server/services/audit.service';
 
 const SUBMITTABLE: KycStatus[] = ['NOT_STARTED', 'REJECTED'];
 const REVIEWABLE: KycStatus[] = ['PENDING', 'UNDER_REVIEW'];
@@ -164,6 +165,14 @@ export async function approveKycCase(kycCaseId: string, adminUserId: string) {
     include: { user: true, documents: true },
   });
 
+  await writeAuditLog({
+    actorUserId: adminUserId,
+    action: 'KYC_APPROVED',
+    targetType: 'KYC_CASE',
+    targetId: kycCaseId,
+    metadata: { userId: kycCase.userId },
+  });
+
   return toAdminKycCaseDetail(updated);
 }
 
@@ -186,6 +195,14 @@ export async function rejectKycCase(
       rejectionReason: input.reason,
     },
     include: { user: true, documents: true },
+  });
+
+  await writeAuditLog({
+    actorUserId: adminUserId,
+    action: 'KYC_REJECTED',
+    targetType: 'KYC_CASE',
+    targetId: kycCaseId,
+    metadata: { userId: kycCase.userId, reason: input.reason },
   });
 
   return toAdminKycCaseDetail(updated);

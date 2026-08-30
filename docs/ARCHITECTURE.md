@@ -419,3 +419,42 @@ When monetization is decided, slot in provider-agnostic `Payment`/`Escrow` servi
 ## Testing
 
 Unit tests for review schema and payment seam constants. Typecheck and lint pass across all workspaces.
+
+---
+
+# Phase 10 — Admin Platform
+
+## Database Models
+
+- **`AuditLog`** — immutable record of admin actions (`actorUserId`, `action`, `targetType`, `targetId`, `metadata` JSON). Never stores secrets or raw document bytes.
+- **`Report`** — user-submitted reports (`targetType`: USER/GIG/MESSAGE, `reason`, `description`, `status` lifecycle: OPEN → RESOLVED/DISMISSED).
+
+## Services
+
+- **`audit.service.ts`** — `writeAuditLog()` helper used by all admin mutations.
+- **`admin.service.ts`** — dashboard stats, list users/gigs/reports/flagged messages/audit logs, suspend user/gig, reactivate user, resolve report, clear message flag.
+- **`report.service.ts`** — authenticated users submit reports via `POST /api/reports`; duplicate open reports blocked.
+
+KYC approve/reject writes audit entries (`KYC_APPROVED`, `KYC_REJECTED`).
+
+## API Routes (admin — all require `ADMIN` role)
+
+- `GET /api/admin/dashboard`
+- `GET /api/admin/users`, `POST /api/admin/users/[id]/suspend`, `POST .../reactivate`
+- `GET /api/admin/gigs`, `POST /api/admin/gigs/[id]/suspend`
+- `GET /api/admin/reports`, `POST /api/admin/reports/[id]/resolve`
+- `GET /api/admin/moderation/flagged-messages`, `POST /api/admin/moderation/messages/[id]/clear`
+- `GET /api/admin/audit-logs`
+- Existing KYC admin routes under `/api/admin/kyc/*`
+
+User-facing: `POST /api/reports`.
+
+## Web UI
+
+- Admin shell with nav at `/admin` (dashboard, users, gigs, KYC, reports, moderation, audit log).
+- Site header Admin link points to `/admin`.
+- KYC review queue integrated under admin nav.
+
+## Testing
+
+Unit tests for admin/report Zod schemas. Typecheck, lint, and Vitest pass across workspaces.

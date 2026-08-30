@@ -56,7 +56,7 @@ export function SiteHeader() {
               </Button>
             </Link>
             {user.roles.includes('ADMIN') && (
-              <Link href="/admin/kyc">
+              <Link href="/admin">
                 <Button variant="ghost" size="sm">
                   Admin
                 </Button>

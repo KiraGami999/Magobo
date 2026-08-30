@@ -11,12 +11,10 @@ import { Input } from "@/components/ui/input";
 import { LoadingState } from "@/components/magobo/loading-state";
 import { ErrorState } from "@/components/magobo/error-state";
 import { apiGet, apiPost } from "@/lib/api-client";
-import { useCurrentUser } from "@/lib/use-current-user";
 
 export default function AdminKycDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const { user, loading: authLoading } = useCurrentUser();
   const [kycCase, setKycCase] = useState<AdminKycCaseDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,19 +36,9 @@ export default function AdminKycDetailPage() {
   }, [params.id]);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.replace("/login");
-      return;
-    }
-    if (user && !user.roles.includes("ADMIN")) {
-      router.replace("/");
-      return;
-    }
-    if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      void load();
-    }
-  }, [authLoading, user, router, load]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
+  }, [load]);
 
   async function approve() {
     if (!params.id) return;
@@ -81,15 +69,15 @@ export default function AdminKycDetailPage() {
     router.push("/admin/kyc");
   }
 
-  if (authLoading || loading) return <LoadingState />;
+  if (loading) return <LoadingState />;
   if (error) return <ErrorState description={error} onRetry={load} />;
   if (!kycCase) return null;
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{kycCase.userFullName}</h1>
+          <h2 className="text-lg font-semibold">{kycCase.userFullName}</h2>
           <p className="text-muted-foreground text-sm">{kycCase.status.replaceAll("_", " ")}</p>
         </div>
         <Link href="/admin/kyc" className={buttonVariants({ variant: "ghost", size: "sm" })}>
