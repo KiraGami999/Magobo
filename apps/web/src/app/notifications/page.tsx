@@ -102,13 +102,11 @@ export default function NotificationsPage() {
             key={notification.id}
             className={cn(!notification.readAt && 'border-primary/30 bg-primary/5')}
           >
-            <CardHeader className="pb-2">
-              <div className="flex items-start justify-between gap-3">
-                <CardTitle className="text-base">{notification.title}</CardTitle>
-                <time className="text-muted-foreground shrink-0 text-xs">
-                  {new Date(notification.createdAt).toLocaleString()}
-                </time>
-              </div>
+            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <CardTitle className="text-base">{notification.title}</CardTitle>
+              <time className="text-muted-foreground shrink-0 text-xs">
+                {new Date(notification.createdAt).toLocaleString()}
+              </time>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               <p className="text-sm">{notification.body}</p>

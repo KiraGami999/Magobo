@@ -79,12 +79,12 @@ export default function EditGigPage() {
     router.push(`/gigs/${params.id}`);
   }
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState description={error} onRetry={load} />;
+  if (loading) return <LoadingState page />;
+  if (error) return <ErrorState page description={error} onRetry={load} />;
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Edit draft</h1>
         <Link href={`/gigs/${params.id}`} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
           Cancel

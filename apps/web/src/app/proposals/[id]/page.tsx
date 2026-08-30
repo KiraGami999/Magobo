@@ -83,8 +83,8 @@ export default function ProposalDetailPage() {
     await runAction(`/api/proposals/${params.id}/negotiate`, parsed.data, 'Counter-offer sent.');
   }
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState description={error} onRetry={load} />;
+  if (loading) return <LoadingState page />;
+  if (error) return <ErrorState page description={error} onRetry={load} />;
   if (!proposal) return null;
 
   return (

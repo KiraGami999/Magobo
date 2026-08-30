@@ -59,6 +59,16 @@ npm run test
 npm run format:check
 ```
 
+## Deploy to Vercel
+
+Production deployment is documented in [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md).
+
+Quick summary:
+
+1. Import the repo on [Vercel](https://vercel.com) with **Root Directory** = `apps/web`
+2. Set environment variables: `DATABASE_URL` and `DIRECT_URL` from [Neon](https://console.neon.tech) (pooled + direct connection strings)
+3. Deploy — migrations and `prisma generate` run automatically via `vercel-build`
+
 ## Health check
 
 Once the web app is running, `GET /api/health` confirms the API is up and Prisma can reach PostgreSQL.

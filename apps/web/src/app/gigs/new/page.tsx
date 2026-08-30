@@ -65,7 +65,7 @@ export default function NewGigPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Post a gig</h1>
         <Link href="/gigs" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
           Cancel

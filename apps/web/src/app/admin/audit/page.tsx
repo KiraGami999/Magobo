@@ -52,7 +52,7 @@ export default function AdminAuditPage() {
               <p className="text-muted-foreground text-xs">{new Date(entry.createdAt).toLocaleString()}</p>
             </CardHeader>
             <CardContent className="text-muted-foreground space-y-1 text-sm">
-              <p>
+              <p className="break-all">
                 {entry.targetType} · {entry.targetId}
               </p>
               {entry.actorName ? <p>By {entry.actorName}</p> : null}

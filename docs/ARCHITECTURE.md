@@ -493,3 +493,44 @@ Existing domain services (proposals, messages, projects, reviews) still call **`
 ## Testing
 
 Unit tests for notification schemas and href resolution. Typecheck, lint, and Vitest pass across workspaces.
+
+---
+
+# Phase 12 — UX & Responsiveness Audit
+
+## Global chrome
+
+- **`MainChrome`** in root layout — mounts **`SiteHeader`** on all routes except auth (`/login`, `/register`, …) and `/admin/*`.
+- **`overflow-x-hidden`** on `body` to prevent horizontal scroll from long content.
+
+## Mobile navigation
+
+- **`SiteHeader`** — desktop inline nav at `md+`; hamburger menu below `md` with full-width 44px tap targets.
+- **`NotificationBell`** — icon button with unread badge (accessible `aria-label`).
+
+## Touch targets & form controls
+
+- **`Button`** default/icon sizes bumped to **44px** (`h-11` / `size-11`); `sm` at 40px.
+- **`Input`** height **44px** (`h-11`).
+
+## Page layout consistency
+
+- **`PageFrame`** — shared `max-w-*` + `px-4 py-8 sm:px-6` wrapper.
+- **`LoadingState`** / **`ErrorState`** — optional `page` prop wraps early returns in `PageFrame` (used across 20+ pages).
+
+## Admin
+
+- **`AdminShell`** — horizontally scrollable nav on mobile; nav links `min-h-11`; loading state uses page frame.
+
+## Page fixes
+
+- Flex-wrap on page title rows (messages, projects, proposals, gigs forms, KYC).
+- Message thread: `min-h-[50dvh]`, wrapped message meta, larger textarea.
+- Notification cards: stacked title/time on mobile.
+- Admin audit/reports: `break-all` on UUIDs.
+- **`StatusBadge`**: wraps on narrow screens instead of forcing nowrap overflow.
+- Login “Forgot password?” link enlarged tap area.
+
+## Testing
+
+Typecheck, lint, and Vitest pass. Manual verification recommended at 320 / 375 / 768 / 1024 / 1440px.

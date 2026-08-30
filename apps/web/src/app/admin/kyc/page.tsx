@@ -49,7 +49,7 @@ export default function AdminKycPage() {
       ) : (
         cases.map((kycCase) => (
           <Card key={kycCase.id}>
-            <CardHeader className="flex flex-row items-center justify-between gap-3">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle className="text-base">{kycCase.userFullName}</CardTitle>
                 <p className="text-muted-foreground text-sm">{kycCase.userEmail ?? "No email"}</p>

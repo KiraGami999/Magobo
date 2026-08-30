@@ -69,13 +69,13 @@ export default function AdminKycDetailPage() {
     router.push("/admin/kyc");
   }
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState description={error} onRetry={load} />;
+  if (loading) return <LoadingState page />;
+  if (error) return <ErrorState page description={error} onRetry={load} />;
   if (!kycCase) return null;
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">{kycCase.userFullName}</h2>
           <p className="text-muted-foreground text-sm">{kycCase.status.replaceAll("_", " ")}</p>

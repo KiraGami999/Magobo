@@ -75,7 +75,7 @@ export default function AdminReportsPage() {
                   {report.reason.replaceAll('_', ' ')} · {report.targetType}
                 </CardTitle>
                 <p className="text-muted-foreground text-sm">Reported by {report.reporterName}</p>
-                <p className="text-muted-foreground mt-1 text-xs">Target ID: {report.targetId}</p>
+                <p className="text-muted-foreground mt-1 break-all text-xs">Target ID: {report.targetId}</p>
               </div>
               <StatusBadge label={report.status.replaceAll('_', ' ')} />
             </CardHeader>

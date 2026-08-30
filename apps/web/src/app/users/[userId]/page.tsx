@@ -42,8 +42,8 @@ export default function PublicUserProfilePage() {
     void load();
   }, [load]);
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState description={error} onRetry={load} />;
+  if (loading) return <LoadingState page />;
+  if (error) return <ErrorState page description={error} onRetry={load} />;
   if (!profile) return null;
 
   const trust = profile.userProfile ?? profile.businessProfile;

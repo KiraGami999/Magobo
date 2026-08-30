@@ -49,7 +49,7 @@ export default function MyProposalsPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">My proposals</h1>
         <Link href="/gigs" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
           Browse gigs

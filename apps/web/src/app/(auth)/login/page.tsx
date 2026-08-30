@@ -89,7 +89,7 @@ export default function LoginPage() {
           <div className="flex justify-end">
             <Link
               href="/forgot-password"
-              className="text-muted-foreground hover:text-foreground text-xs font-medium"
+              className="text-muted-foreground hover:text-foreground inline-flex min-h-11 items-center py-2 text-sm font-medium"
             >
               Forgot password?
             </Link>

@@ -74,8 +74,8 @@ export default function ConversationPage() {
     setMessages((current) => [...current, response.data.message]);
   }
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState description={error} onRetry={load} />;
+  if (loading) return <LoadingState page />;
+  if (error) return <ErrorState page description={error} onRetry={load} />;
   if (!conversation) return null;
 
   return (
@@ -92,7 +92,7 @@ export default function ConversationPage() {
         </Link>
       </div>
 
-      <Card className="flex min-h-[420px] flex-col">
+      <Card className="flex min-h-[50dvh] flex-col">
         <CardHeader className="border-b pb-3">
           <CardTitle className="text-base">Conversation</CardTitle>
         </CardHeader>
@@ -110,7 +110,7 @@ export default function ConversationPage() {
                       isMine ? 'bg-primary/5 ml-auto' : 'bg-muted/30'
                     }`}
                   >
-                    <div className="mb-1 flex items-center justify-between gap-3">
+                    <div className="mb-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                       <span className="font-medium">{isMine ? 'You' : message.senderName}</span>
                       <span className="text-muted-foreground text-xs">
                         {new Date(message.createdAt).toLocaleString()}
@@ -140,7 +140,7 @@ export default function ConversationPage() {
               <FormField id="body" label="Message">
                 <textarea
                   id="body"
-                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[88px] w-full rounded-md border px-3 py-2 text-base focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none md:text-sm"
                   value={body}
                   onChange={(event) => setBody(event.target.value)}
                   placeholder="Keep communication on Magobo — off-platform contact may be flagged."

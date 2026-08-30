@@ -95,8 +95,8 @@ export default function GigDetailPage() {
     router.push('/my/gigs');
   }
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState description={error} onRetry={load} />;
+  if (loading) return <LoadingState page />;
+  if (error) return <ErrorState page description={error} onRetry={load} />;
   if (!gig) return null;
 
   const location = [gig.location.city, gig.location.country].filter(Boolean).join(', ') || 'Flexible';

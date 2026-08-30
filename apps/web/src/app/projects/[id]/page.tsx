@@ -119,8 +119,8 @@ export default function ProjectWorkspacePage() {
     setRevisionMessage('');
   }
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState description={error} onRetry={load} />;
+  if (loading) return <LoadingState page />;
+  if (error) return <ErrorState page description={error} onRetry={load} />;
   if (!project) return null;
 
   const counterpart =
