@@ -44,8 +44,8 @@ export default function MyProposalsPage() {
     }
   }, [user, load]);
 
-  if (authLoading || loading) return <LoadingState />;
-  if (error) return <ErrorState description={error} onRetry={load} />;
+  if (authLoading || loading) return <LoadingState page />;
+  if (error) return <ErrorState page description={error} onRetry={load} />;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6">

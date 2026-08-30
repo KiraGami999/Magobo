@@ -4,7 +4,6 @@ import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { StatusBadge } from '@/components/magobo/status-badge';
 import { VerificationBadge } from '@/components/magobo/verification-badge';
-import { SiteHeader } from '@/components/magobo/site-header';
 
 const highlights = [
   {
@@ -26,8 +25,7 @@ const highlights = [
 
 export default function Home() {
   return (
-    <div className="bg-background flex min-h-screen flex-col">
-      <SiteHeader />
+    <div className="bg-background flex flex-1 flex-col">
 
       <main className="flex flex-1 flex-col items-center gap-16 px-4 py-16 sm:px-6 lg:px-8">
         <section className="flex max-w-2xl flex-col items-center gap-6 text-center">

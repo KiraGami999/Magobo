@@ -86,8 +86,8 @@ export default function KycPage() {
     setKyc(response.data.kyc);
   }
 
-  if (authLoading || loading) return <LoadingState />;
-  if (error) return <ErrorState description={error} onRetry={load} />;
+  if (authLoading || loading) return <LoadingState page />;
+  if (error) return <ErrorState page description={error} onRetry={load} />;
   if (!kyc) return null;
 
   const canEdit = kyc.status === "NOT_STARTED" || kyc.status === "REJECTED";

@@ -458,3 +458,38 @@ User-facing: `POST /api/reports`.
 ## Testing
 
 Unit tests for admin/report Zod schemas. Typecheck, lint, and Vitest pass across workspaces.
+
+---
+
+# Phase 11 — Notifications
+
+## Database Models
+
+- **`Notification`** — persisted in-app alert per user (`event`, `title`, `body`, `metadata` JSON, `readAt` nullable).
+
+## Notification Service (`notification.service.ts`)
+
+- **`dispatchNotification`** — creates in-app record, then fans out to mock **email** and **SMS** providers when the recipient has contact info (no real delivery until providers are swapped).
+- **`listNotifications`**, **`getUnreadNotificationCount`**, **`markNotificationRead`**, **`markAllNotificationsRead`** — user-scoped; ownership enforced server-side.
+
+Existing domain services (proposals, messages, projects, reviews) still call **`notificationProvider.notify()`** — the provider now delegates to `dispatchNotification` without changing call sites.
+
+## Shared
+
+- `NOTIFICATION_EVENTS`, `NotificationSummary`, `resolveNotificationHref()` for deep links (messages, proposals, projects).
+
+## API Routes
+
+- `GET /api/notifications` (paginated, optional `unreadOnly`)
+- `GET /api/notifications/unread-count`
+- `POST /api/notifications/[id]/read`
+- `POST /api/notifications/read-all`
+
+## Web UI
+
+- `/notifications` inbox with mark-read and deep links.
+- **Alerts** bell in site header with unread badge.
+
+## Testing
+
+Unit tests for notification schemas and href resolution. Typecheck, lint, and Vitest pass across workspaces.

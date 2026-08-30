@@ -25,6 +25,10 @@ export interface NotificationPayload {
   metadata?: Record<string, string>;
 }
 
+export interface NotificationProvider {
+  notify(payload: NotificationPayload): Promise<void>;
+}
+
 export interface NotificationSummary {
   id: string;
   event: NotificationEvent;

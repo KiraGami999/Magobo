@@ -1,5 +1,6 @@
 import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PageFrame } from '@/components/magobo/page-frame';
 import { cn } from '@/lib/utils';
 
 export interface ErrorStateProps {
@@ -7,6 +8,9 @@ export interface ErrorStateProps {
   description?: string;
   onRetry?: () => void;
   className?: string;
+  /** Wrap in standard page padding — use for full-page early returns. */
+  page?: boolean;
+  maxWidth?: 'sm' | 'md' | '2xl' | '3xl' | '5xl' | '6xl';
 }
 
 /**
@@ -18,8 +22,10 @@ export function ErrorState({
   description = 'Please try again. If the problem continues, come back in a few minutes.',
   onRetry,
   className,
+  page,
+  maxWidth = '3xl',
 }: ErrorStateProps) {
-  return (
+  const content = (
     <div
       className={cn(
         'border-border flex flex-col items-center justify-center gap-3 rounded-lg border px-6 py-12 text-center',
@@ -31,11 +37,17 @@ export function ErrorState({
         <p className="text-foreground text-sm font-medium">{title}</p>
         <p className="text-muted-foreground text-sm">{description}</p>
       </div>
-      {onRetry && (
-        <Button variant="outline" size="sm" onClick={onRetry}>
+      {onRetry ? (
+        <Button variant="outline" onClick={onRetry}>
           Try again
         </Button>
-      )}
+      ) : null}
     </div>
   );
+
+  if (page) {
+    return <PageFrame maxWidth={maxWidth}>{content}</PageFrame>;
+  }
+
+  return content;
 }

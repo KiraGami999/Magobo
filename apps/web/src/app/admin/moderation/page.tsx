@@ -47,8 +47,8 @@ export default function AdminModerationPage() {
     await load();
   }
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState description={error} onRetry={load} />;
+  if (loading) return <LoadingState page />;
+  if (error) return <ErrorState page description={error} onRetry={load} />;
 
   return (
     <div className="flex flex-col gap-4">

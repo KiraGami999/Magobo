@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
  * rather than re-implementing status styling per feature.
  */
 const statusBadgeVariants = cva(
-  'inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap',
+  'inline-flex w-fit max-w-full items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium sm:whitespace-nowrap',
   {
     variants: {
       tone: {

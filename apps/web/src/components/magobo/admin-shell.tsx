@@ -33,7 +33,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }, [loading, user, router]);
 
   if (loading || !user || !user.roles.includes('ADMIN')) {
-    return <LoadingState />;
+    return <LoadingState page maxWidth="6xl" />;
   }
 
   return (
@@ -43,7 +43,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         <p className="text-muted-foreground text-sm">Platform oversight, moderation, and audit.</p>
       </div>
 
-      <nav className="border-border flex flex-wrap gap-2 border-b pb-4">
+      <nav
+        className="border-border -mx-4 flex gap-2 overflow-x-auto border-b px-4 pb-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+        aria-label="Admin sections"
+      >
         {NAV_ITEMS.map((item) => {
           const active =
             'exact' in item && item.exact ? pathname === item.href : pathname.startsWith(item.href);
@@ -52,7 +55,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               key={item.href}
               href={item.href}
               className={cn(
-                'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                'inline-flex min-h-11 shrink-0 items-center rounded-md px-4 py-2 text-sm font-medium transition-colors',
                 active
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground',

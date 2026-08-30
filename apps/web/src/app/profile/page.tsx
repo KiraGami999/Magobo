@@ -105,8 +105,8 @@ export default function ProfilePage() {
     await load();
   }
 
-  if (authLoading || loading) return <LoadingState />;
-  if (error) return <ErrorState description={error} onRetry={load} />;
+  if (authLoading || loading) return <LoadingState page />;
+  if (error) return <ErrorState page description={error} onRetry={load} />;
   if (!profile) return null;
 
   const kycVerified = profile.kycStatus === "VERIFIED";
