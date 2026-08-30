@@ -1,0 +1,633 @@
+// Magobo — Prisma schema
+//
+// Models are added incrementally, phase by phase, per the Magobo
+// development rules — never all at once.
+//
+// Phase 2 (Authentication): User, Session, VerificationToken.
+// Phase 3 (Profiles & KYC): UserProfile, BusinessProfile, ServiceCategory,
+//   KycCase, KycDocument.
+// Phase 4 (Gig Marketplace): Gig, GigAttachment.
+// Phase 5 (Proposals): Proposal, ProposalNegotiationEntry.
+// Phase 6 (Messaging): Conversation, Message, MessageAttachment.
+// Phase 7 (Project workflow): GigMilestone, GigDeliverable, GigRevisionRequest.
+// A single User can hold multiple roles (INDIVIDUAL / BUSINESS /
+// SERVICE_PROVIDER / ADMIN) — Magobo never splits client and provider
+// identities into separate systems.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// Capabilities a single identity can hold simultaneously.
+enum UserRole {
+  INDIVIDUAL
+  BUSINESS
+  SERVICE_PROVIDER
+  ADMIN
+}
+
+enum AccountStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum VerificationPurpose {
+  EMAIL_VERIFICATION
+  PHONE_VERIFICATION
+  PASSWORD_RESET
+}
+
+enum VerificationChannel {
+  EMAIL
+  SMS
+}
+
+enum KycStatus {
+  NOT_STARTED
+  PENDING
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum KycDocumentType {
+  GOVERNMENT_ID_FRONT
+  GOVERNMENT_ID_BACK
+  SELFIE
+  BUSINESS_REGISTRATION
+  PROOF_OF_ADDRESS
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  LIMITED
+  UNAVAILABLE
+}
+
+/// Gig lifecycle states — all transitions go through gig.service.ts.
+enum GigStatus {
+  DRAFT
+  PUBLISHED
+  RECEIVING_PROPOSALS
+  NEGOTIATING
+  AWARDED
+  IN_PROGRESS
+  SUBMITTED
+  REVISION_REQUESTED
+  RESUBMITTED
+  COMPLETED
+  PAYMENT_RELEASED
+  REVIEWED
+  CANCELLED
+  DISPUTED
+  SUSPENDED
+}
+
+enum ProposalStatus {
+  SUBMITTED
+  SHORTLISTED
+  NEGOTIATING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum MessageModerationStatus {
+  CLEAN
+  FLAGGED
+}
+
+enum MilestoneStatus {
+  PENDING
+  IN_PROGRESS
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum DeliverableStatus {
+  PENDING_REVIEW
+  ACCEPTED
+  SUPERSEDED
+}
+
+model User {
+  id String @id @default(uuid())
+
+  email    String? @unique
+  phone    String? @unique
+  fullName String
+
+  /// Argon2/bcrypt hash — never a plaintext or reversible representation.
+  passwordHash String
+
+  roles  UserRole[]    @default([INDIVIDUAL])
+  status AccountStatus @default(PENDING_VERIFICATION)
+
+  emailVerifiedAt DateTime?
+  phoneVerifiedAt DateTime?
+  lastLoginAt     DateTime?
+
+  /// Account-level brute-force lockout, independent of IP-based rate limiting.
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  sessions           Session[]
+  verificationTokens VerificationToken[]
+  userProfile        UserProfile?
+  businessProfile    BusinessProfile?
+  kycCase            KycCase?
+  kycReviews         KycCase[]           @relation("KycReviewer")
+  ownedGigs          Gig[]               @relation("GigOwner")
+  proposals          Proposal[]          @relation("ProposalProvider")
+  negotiationEntries ProposalNegotiationEntry[]
+  conversationsOwned    Conversation[] @relation("ConversationOwner")
+  conversationsAsProvider Conversation[] @relation("ConversationProvider")
+  sentMessages         Message[]
+  milestoneSubmissions GigMilestone[] @relation("MilestoneSubmitter")
+  deliverables         GigDeliverable[]
+  revisionRequests     GigRevisionRequest[]
+
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model Session {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// SHA-256 hash of the opaque session token. The raw token is only ever
+  /// seen by the client (cookie or Authorization header) — never stored.
+  tokenHash String @unique
+
+  userAgent String?
+  ipAddress String?
+
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model VerificationToken {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  purpose     VerificationPurpose
+  channel     VerificationChannel
+  /// SHA-256 hash of the raw token/OTP — the raw value is only ever
+  /// delivered out-of-band (email/SMS), never persisted.
+  tokenHash   String
+  /// Email or phone the token was sent to, kept for audit purposes.
+  destination String
+
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+
+  @@unique([tokenHash])
+  @@index([userId, purpose])
+}
+
+/// Service categories live in the database — never hard-coded in UI.
+/// Gig marketplace (Phase 4) will reuse this same taxonomy.
+model ServiceCategory {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  slug        String  @unique
+  description String?
+
+  parentId String?
+  parent   ServiceCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children ServiceCategory[] @relation("CategoryHierarchy")
+
+  userProfiles     UserProfileCategory[]
+  businessProfiles BusinessProfileCategory[]
+  gigs             Gig[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([parentId])
+}
+
+/// Individual / service-provider profile — one per user.
+model UserProfile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bio             String?
+  /// Object-storage key — never a raw document or public URL persisted here.
+  photoStorageKey String?
+
+  locationCity    String?
+  locationRegion  String?
+  locationCountry String?
+  locationLat     Float?
+  locationLng     Float?
+
+  yearsOfExperience Int?
+  availability      AvailabilityStatus @default(AVAILABLE)
+  skills            String[]           @default([])
+
+  /// Trust-system placeholders — updated by Phase 9, never client-writable.
+  averageRating       Float @default(0)
+  reviewCount         Int   @default(0)
+  completedGigsCount  Int   @default(0)
+  responseRatePercent Int?
+
+  categories UserProfileCategory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserProfileCategory {
+  userProfileId String
+  categoryId    String
+
+  userProfile UserProfile     @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+  category    ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([userProfileId, categoryId])
+}
+
+/// Business profile — one per user who acts as a business.
+model BusinessProfile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  businessName   String
+  description    String?
+  logoStorageKey String?
+  websiteUrl     String?
+
+  locationCity    String?
+  locationRegion  String?
+  locationCountry String?
+
+  /// Trust-system placeholders — updated by Phase 9, never client-writable.
+  averageRating      Float @default(0)
+  reviewCount        Int   @default(0)
+  completedGigsCount Int   @default(0)
+
+  categories BusinessProfileCategory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BusinessProfileCategory {
+  businessProfileId String
+  categoryId        String
+
+  businessProfile BusinessProfile @relation(fields: [businessProfileId], references: [id], onDelete: Cascade)
+  category        ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([businessProfileId, categoryId])
+}
+
+/// One KYC case per user. Status transitions are enforced server-side only.
+model KycCase {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status KycStatus @default(NOT_STARTED)
+
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+  expiresAt   DateTime?
+
+  reviewedByUserId String?
+  reviewedBy       User?   @relation("KycReviewer", fields: [reviewedByUserId], references: [id])
+  rejectionReason  String?
+
+  documents KycDocument[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
+/// Identity documents — storage references only, never raw bytes in PostgreSQL.
+model KycDocument {
+  id        String  @id @default(uuid())
+  kycCaseId String
+  kycCase   KycCase @relation(fields: [kycCaseId], references: [id], onDelete: Cascade)
+
+  documentType     KycDocumentType
+  storageKey       String
+  originalFileName String
+  mimeType         String
+  fileSizeBytes    Int
+
+  uploadedAt DateTime @default(now())
+
+  @@index([kycCaseId])
+}
+
+/// A gig posted by a client (individual or business) seeking service providers.
+model Gig {
+  id String @id @default(uuid())
+
+  ownerUserId String
+  owner       User   @relation("GigOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  categoryId String
+  category   ServiceCategory @relation(fields: [categoryId], references: [id])
+
+  title       String
+  description String
+
+  status GigStatus @default(DRAFT)
+
+  /// Budget in integer minor currency units — never floats.
+  budgetMinMinor Int?
+  budgetMaxMinor Int?
+  currency       String @default("MWK")
+
+  locationCity    String?
+  locationRegion  String?
+  locationCountry String?
+  locationLat     Float?
+  locationLng     Float?
+
+  deadlineAt  DateTime?
+  publishedAt DateTime?
+
+  attachments GigAttachment[]
+  proposals   Proposal[]
+  conversations Conversation[]
+
+  awardedProposalId String?   @unique
+  awardedProposal   Proposal? @relation("AwardedProposal", fields: [awardedProposalId], references: [id])
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  milestones       GigMilestone[]
+  deliverables     GigDeliverable[]
+  revisionRequests GigRevisionRequest[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([ownerUserId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([deletedAt])
+  @@index([publishedAt])
+  @@index([locationCity])
+}
+
+/// Gig brief attachments — storage references only.
+model GigAttachment {
+  id String @id @default(uuid())
+
+  gigId String
+  gig   Gig    @relation(fields: [gigId], references: [id], onDelete: Cascade)
+
+  storageKey       String
+  originalFileName String
+  mimeType         String
+  fileSizeBytes    Int
+
+  uploadedAt DateTime @default(now())
+
+  @@index([gigId])
+}
+
+/// A service provider's proposal on an open gig.
+model Proposal {
+  id String @id @default(uuid())
+
+  gigId String
+  gig   Gig    @relation(fields: [gigId], references: [id], onDelete: Cascade)
+
+  providerUserId String
+  provider       User   @relation("ProposalProvider", fields: [providerUserId], references: [id], onDelete: Cascade)
+
+  coverLetter String
+  /// Proposed price in integer minor currency units.
+  amountMinor Int
+  currency    String @default("MWK")
+
+  estimatedDays Int?
+  status        ProposalStatus @default(SUBMITTED)
+
+  negotiationEntries ProposalNegotiationEntry[]
+  awardedForGig      Gig?                       @relation("AwardedProposal")
+  conversation       Conversation?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([gigId, providerUserId])
+  @@index([gigId])
+  @@index([providerUserId])
+  @@index([status])
+}
+
+/// Counter-offers and negotiation messages — kept on-platform.
+model ProposalNegotiationEntry {
+  id String @id @default(uuid())
+
+  proposalId String
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  authorUserId String
+  author       User   @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  message     String
+  amountMinor Int?
+
+  createdAt DateTime @default(now())
+
+  @@index([proposalId])
+}
+
+/// On-platform thread between a gig owner and a provider — one per proposal.
+model Conversation {
+  id String @id @default(uuid())
+
+  gigId String
+  gig   Gig    @relation(fields: [gigId], references: [id], onDelete: Cascade)
+
+  proposalId String   @unique
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  ownerUserId String
+  owner       User   @relation("ConversationOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  providerUserId String
+  provider       User   @relation("ConversationProvider", fields: [providerUserId], references: [id], onDelete: Cascade)
+
+  lastMessageAt DateTime?
+
+  messages Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gigId])
+  @@index([ownerUserId])
+  @@index([providerUserId])
+  @@index([lastMessageAt])
+}
+
+model Message {
+  id String @id @default(uuid())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  senderUserId String
+  sender       User   @relation(fields: [senderUserId], references: [id], onDelete: Cascade)
+
+  body String
+
+  moderationStatus MessageModerationStatus @default(CLEAN)
+  moderationFlags  String[]                @default([])
+
+  attachments MessageAttachment[]
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId])
+  @@index([createdAt])
+}
+
+/// Message attachments — storage references only.
+model MessageAttachment {
+  id String @id @default(uuid())
+
+  messageId String
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  storageKey       String
+  originalFileName String
+  mimeType         String
+  fileSizeBytes    Int
+
+  uploadedAt DateTime @default(now())
+
+  @@index([messageId])
+}
+
+/// Work breakdown for an awarded gig — optional milestones set by the owner.
+model GigMilestone {
+  id String @id @default(uuid())
+
+  gigId String
+  gig   Gig    @relation(fields: [gigId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  sortOrder   Int     @default(0)
+
+  /// Integer minor units — seam for future milestone-based payments.
+  amountMinor Int?
+  currency    String @default("MWK")
+
+  status MilestoneStatus @default(PENDING)
+  dueAt  DateTime?
+
+  submittedAt DateTime?
+  approvedAt  DateTime?
+
+  submittedByUserId String?
+  submittedBy       User?   @relation("MilestoneSubmitter", fields: [submittedByUserId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gigId])
+  @@index([status])
+}
+
+/// Provider deliverable submission — versioned for revision cycles.
+model GigDeliverable {
+  id String @id @default(uuid())
+
+  gigId String
+  gig   Gig    @relation(fields: [gigId], references: [id], onDelete: Cascade)
+
+  submittedByUserId String
+  submittedBy       User   @relation(fields: [submittedByUserId], references: [id], onDelete: Cascade)
+
+  submissionNumber Int @default(1)
+  notes            String
+  status           DeliverableStatus @default(PENDING_REVIEW)
+
+  attachments GigDeliverableAttachment[]
+  revisions   GigRevisionRequest[]
+
+  createdAt DateTime @default(now())
+
+  @@index([gigId])
+  @@index([status])
+}
+
+model GigDeliverableAttachment {
+  id String @id @default(uuid())
+
+  deliverableId String
+  deliverable   GigDeliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+
+  storageKey       String
+  originalFileName String
+  mimeType         String
+  fileSizeBytes    Int
+
+  uploadedAt DateTime @default(now())
+
+  @@index([deliverableId])
+}
+
+/// Owner feedback when requesting changes to a submission.
+model GigRevisionRequest {
+  id String @id @default(uuid())
+
+  gigId String
+  gig   Gig    @relation(fields: [gigId], references: [id], onDelete: Cascade)
+
+  deliverableId String
+  deliverable   GigDeliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+
+  requestedByUserId String
+  requestedBy       User   @relation(fields: [requestedByUserId], references: [id], onDelete: Cascade)
+
+  message String
+
+  createdAt DateTime @default(now())
+
+  @@index([gigId])
+  @@index([deliverableId])
+}

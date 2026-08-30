@@ -1,0 +1,31 @@
+{
+  "name": "magobo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Magobo — a multi-directional local gig marketplace platform.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev:web": "npm run dev --workspace=@magobo/web",
+    "dev:mobile": "npm run start --workspace=@magobo/mobile",
+    "build:web": "npm run build --workspace=@magobo/web",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "npm run generate --workspace=@magobo/db",
+    "db:migrate": "npm run migrate:dev --workspace=@magobo/db",
+    "db:seed": "npm run seed --workspace=@magobo/db",
+    "db:studio": "npm run studio --workspace=@magobo/db"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.9"
+  }
+}
