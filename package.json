@@ -20,7 +20,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "postinstall": "npm run db:generate",
-    "vercel-build": "npm run migrate:deploy --workspace=@magobo/db && npm run build --workspace=@magobo/web",
+    "vercel-build": "node scripts/vercel-build.mjs",
     "db:generate": "npm run generate --workspace=@magobo/db",
     "db:migrate": "npm run migrate:dev --workspace=@magobo/db",
     "db:seed": "npm run seed --workspace=@magobo/db",

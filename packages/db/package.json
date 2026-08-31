@@ -8,7 +8,7 @@
   "scripts": {
     "generate": "prisma generate",
     "migrate:dev": "prisma migrate dev",
-    "migrate:deploy": "prisma migrate deploy",
+    "migrate:deploy": "node scripts/migrate-deploy.mjs",
     "studio": "prisma studio",
     "db:push": "prisma db push",
     "seed": "tsx prisma/seed.ts",

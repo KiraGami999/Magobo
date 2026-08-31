@@ -24,11 +24,22 @@ Add these in **Vercel → Project → Settings → Environment Variables** for *
 
 | Variable | Required | Where to get it |
 |----------|----------|-----------------|
-| `DATABASE_URL` | **Yes** | [Neon Console](https://console.neon.tech) → your project → **Connect** → **Connection string** → choose **Pooled** (recommended for serverless). Copy the PostgreSQL URL. Must include `?sslmode=require`. |
-| `DIRECT_URL` | **Yes** | Same Neon page → **Direct connection** (non-pooled). Used only when Vercel runs `prisma migrate deploy` during build. |
+| `DATABASE_URL` | **Yes** | Neon **Pooled** connection string ([Connect](https://console.neon.tech) → Pooled). Or use Neon ↔ Vercel integration (`POSTGRES_PRISMA_URL` is mapped automatically). |
+| `DIRECT_URL` | **Yes** | Neon **Direct connection** string (same page, **not** the pooler host). Or map from integration: `POSTGRES_URL_NON_POOLING`. **This is the usual cause of build failure P1001 if missing or wrong.** |
 | `PAYCHANGU_PORTAL_URL` | No | Your PayChangu dashboard URL. Defaults to `https://dashboard.paychangu.com` if omitted. |
 
-### Neon connection details (step by step)
+### Neon ↔ Vercel integration
+
+If you connected Neon to Vercel in the Neon dashboard, these may appear automatically:
+
+| Neon sets on Vercel | Used for |
+|---------------------|----------|
+| `POSTGRES_PRISMA_URL` | Runtime queries (→ `DATABASE_URL`) |
+| `POSTGRES_URL_NON_POOLING` | Migrations at build (→ `DIRECT_URL`) |
+
+The build script (`packages/db/scripts/migrate-deploy.mjs`) maps those names. You still need **both** a pooled and a direct string available — if the build fails with **P1001**, open [console.neon.tech](https://console.neon.tech), wake the project, and confirm **Direct connection** works.
+
+### Neon connection details (manual setup)
 
 1. Sign in at [console.neon.tech](https://console.neon.tech).
 2. Open project **magobo** (or your project name).
